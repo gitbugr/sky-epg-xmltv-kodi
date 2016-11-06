@@ -1,6 +1,6 @@
 const Gist = require('gist.js');
-const gist = Gist('846c041ad313a511e03cbe2ad8890329')
-  .token('1ecaecc0cb80facd91cdf7484e1d117d64d5f023')
+const gist = Gist('gist_id')
+  .token('gist_token')
 
 const builder = require('xmlbuilder');
 const request = require('request');
@@ -74,7 +74,7 @@ function getProgrammeInfo(channelId, requestId){
 
 function dateTimeFormatXMLTV(date){
   var yearS = date.getFullYear().toString();
-  var monthS= (date.getMonth()<10?"0"+date.getMonth():date.getMonth().toString());
+  var monthS= (date.getMonth()+1<10?"0"+(date.getMonth()+1):(date.getMonth()+1).toString());
   var dateS = (date.getDate()<10?"0"+date.getDate():date.getDate().toString());
   var hoursS = (date.getHours()<10?"0"+date.getHours():date.getHours().toString());
   var minutesS = (date.getMinutes()<10?"0"+date.getMinutes():date.getMinutes().toString());

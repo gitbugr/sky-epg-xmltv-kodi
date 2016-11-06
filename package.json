@@ -6,6 +6,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "dependencies" : {
+     "request" : "latest",
+     "gist.js" : "latest",
+     "xmlbuilder" : "latest"
+  },
   "author": "Kyron Taylor",
   "license": "ISC"
 }

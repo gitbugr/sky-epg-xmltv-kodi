@@ -1,6 +1,6 @@
 const Gist = require('gist.js');
-const gist = Gist('gist_id')
-  .token('gist_token')
+const gist = Gist('GIST_ID')
+  .token('TOKEN_ID')
 
 const builder = require('xmlbuilder');
 const request = require('request');
@@ -85,8 +85,37 @@ function dateTimeFormatXMLTV(date){
 function createXMLTVfile(){
   var xml = builder.create('tv', {updated:new Date()});
   for(i=0;i<Object.keys(channels).length;i++){
-    xml.ele('channel', {'id': channels[Object.keys(channels)[i]].title || 0})
-      .ele('display-name', channels[Object.keys(channels)[i]].title);
+    var title = channels[Object.keys(channels)[i]].title
+    var chan = xml.ele('channel', {'id': title || 0});
+
+    var alt = {
+      "(+1hr)":"+1",
+      "(+1)":"+1",
+      "Sport//ESPN":"Sport ESPN",
+      "Sky2":"Sky 2",
+      "Xtra":"Extra",
+      "Extra":"Xtra",
+      "Cinema":"Movies"
+    };
+
+    var titleArr = title.split(' ');
+    for(j=0;j<titleArr.length;j++){
+      if(typeof alt[titleArr[j]] !== 'undefined'){
+        titleArr[j] = alt[titleArr[j]];
+        chan.ele('display-name', titleArr.join(' '));
+        chan.ele('display-name', titleArr.join(' ') + " HD");
+      }
+    }
+
+    chan.ele('display-name', title);
+    if(title.split(' ').slice(-1)[0] == "HD")
+      chan.ele('display-name', title.split(' ').slice(0,-1).join(' '));
+    else
+      chan.ele('display-name', title + " HD");
+
+    if(title.slice(-3,-1) == "+1"){
+      chan.ele('display-name', title.slice(0,-3) + " +1");
+    }
   }
   for(i=0;i<Object.keys(programmeInfo).length;i++){
     for(j=0;j<programmeInfo[Object.keys(programmeInfo)[i]].length;j++){

@@ -1,4 +1,5 @@
-import Gist from 'gist.js'
+import os from 'os'
+import Gist from 'gist-client'
 import xmlbuilder from 'xmlbuilder'
 import axios from 'axios'
 
@@ -51,22 +52,23 @@ const skyUrls = {
  */
 export default class SkyEPGScraper
 {
-    channels = {}
-    programmeInfo = {}
-    channelNameSubstitutions = channelNameSubstitutions;
-
     /**
      * constructor
      *
      * @param {String=} [outputType='none']
     */
     constructor(outputType = 'none') {
+        this.channels = {};
+        this.programmeInfo = {};
+        this.channelNameSubstitutions = channelNameSubstitutions;
+
         // validate output type
-        const outputTypeValid = validateOutputType(output);
-        if (outputTypeValid.result) {
+        const outputTypeValid = this.validateOutputType(outputType);
+        if (outputTypeValid.status === 1) {
             this.output = outputType;
         } else {
-            throw new Error(outputTypeValid);
+            process.stderr.write(JSON.stringify(outputTypeValid) + os.EOL);
+            process.exit()
         }
         // initialise xml builder
         this.xml = xmlbuilder.create('tv', {
@@ -94,7 +96,7 @@ export default class SkyEPGScraper
 
         if (outputType in supportedOutputTypes) {
             if ('requirements' in supportedOutputTypes[outputType]) {
-                supportedOutputTypes[outputType].requirements.entries.forEach(([requirementType, requirementValue]) => {
+                Object.entries(supportedOutputTypes[outputType].requirements).forEach(([requirementType, requirementValue]) => {
                     switch (requirementType) {
                         case 'environmentVariables':
                             requirementValue.every((environmentVariable) => environmentVariable in process.env);
@@ -203,15 +205,29 @@ export default class SkyEPGScraper
      *
      * @return {Promise}
      */
-    run() {
-        return this.getChannels.then((result) => {
-            if(result.status === 1) {
+    async run() {
+        try {
+            const getChannelsResult = await this.getChannels();
+            if(getChannelsResult.status === 1) {
+                try {
+                    for (const channel of Array(this.channels.length).keys()) {
+                        for (const request of Array(4).keys()) {
+                            const getProgrammeInfoResult = await this.getProgrammeInfo(channel, request);
+                            // we log the error and carry on...
+                            if (getProgrammeInfoResult.status !== 1) {
+                                process.stderr.write(JSON.stringidy(getProgrammeInfoResult) + os.EOL);
+                            }
+                        }
+                    }
+                } catch (error) {
+                    process.stderr.write(`Not quite sure how this could have happened... ${error}` + os.EOL);
+                }
             } else {
-                console.log(result.status);
+                process.stderr.write(JSON.stringify(getChannelsResult) + os.EOL);
             }
-        }).catch((error) => {
-            console.log(`Not quite sure how this could have happened... ${error}`);
-        });
+        } catch (error) {
+            process.stderr.write(`Not quite sure how this could have happened... ${error}` + os.EOL);
+        }
     }
 
     /**
@@ -233,13 +249,13 @@ export default class SkyEPGScraper
     /*
      * converts stored JS Objects to XMLTV and wites to output.
      */
-    write() {
+    async write() {
         for (channel in Object.entries(this.channels)) {
             const title = channel[1].title
-            const channelElement = xml.ele('channel', {'id': title || 0});
+            const channelElement = this.xml.ele('channel', {'id': title || 0});
 
             const titleSegments = title.split(' ');
-            for (titleSegment, index in titleSegments) {
+            for (const [index, titleSegment] of titleSegments) {
                 if (typeof channelNameSubstitutions[titleSegment] !== 'undefined'){
                     titleSegments[index] = channelNameSubstitutions[titleSegment];
                 }
@@ -258,7 +274,7 @@ export default class SkyEPGScraper
 
         for (channelProgrammes in Object.entries(this.programmeInfo)) {
             for (programme in channelProgrammes){
-                const programmeElement = xml.ele('programme', {
+                const programmeElement = this.xml.ele('programme', {
                     start: programme.startTime,
                     stop: programme.endTime,
                     channel: this.channels[channelProgramme].title,
@@ -276,27 +292,28 @@ export default class SkyEPGScraper
             }
         }
 
-        const xmlFormatted = xml.end({pretty:true});
+        const xmlFormatted = this.xml.end({ pretty: true });
 
         switch (this.output) {
             case 'gist':
-                process.stdout.write(`Saving to gist...`);
-                const gist = Gist(process.env.GIST_ID)
-                    .token(process.env.TOKEN_ID);
+                process.stdout.write(`Saving to gist...` + os.EOL);
+                const gist = new Gist();
 
-                gist.file(process.env.GIST_FILENAME)
-                    .write(xmlFormatted);
+                gist.setToken(process.env.TOKEN_ID);
+                try {
+                    const gistResult = await gist.update({
+                        'files': {
+                            [process.env.GIST_FILENAME]: xmlFormatted
+                        },
+                    });
 
-                gist.save(function(err, json) {
-                    if (!err) {
-                        process.stdout.write(`Done! total execution took ${(new Date().getTime() - startDate.getTime()) * 1000} seconds`);
-                    } else {
-                        process.stderr.write(json);
-                    }
-                });
+                    process.stdout.write(`Done! total execution took ${(new Date().getTime() - startDate.getTime()) * 1000} seconds` + os.EOL);
+                } catch (error) {
+                    process.stderr.write(`Not quite sure how this could have happened... ${error}` + os.EOL);
+                }
                 break;
             case 'stdout':
-                process.stdout.write(xmlFormatted);
+                process.stdout.write(xmlFormatted + os.EOL);
                 break;
         }
     }

@@ -1,17 +1,20 @@
 
 export default class SkyEPGResponseBuilder
 {
-    status = 1
-    message = 'success'
-    errors = []
+    constructor() {
+        this.status = 1;
+        this.message = 'success';
+        this.errors = [];
 
-    errorCodes = {
-        '-1': {
-            message: () => `Unknown error: "${arguments[0]}"`,
-        },
-        '1': {
-            message: () => `Output type "${arguments[0]}" is not supported`,
-        },
+        this.errorCodes = {
+            '-1': {
+                message: () => `Unknown error: "${arguments[0]}"`,
+            },
+            '1': {
+                message: () => `Output type "${arguments[0]}" is not supported`,
+            },
+        }
+
     }
 
     /**
@@ -31,7 +34,7 @@ export default class SkyEPGResponseBuilder
         this.message = 'error';
         this.errors.push({
             code,
-            message: errorCodes[code].message(arguments.slice(1))
+            message: this.errorCodes[code].message([...arguments].slice(1))
         })
     }
 

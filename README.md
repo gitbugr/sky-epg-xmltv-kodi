@@ -15,7 +15,7 @@ cd sky-epg-scraper
 
 There are two ways you can run the application;
 
-#### Docker (reccomended)
+#### Docker (recomended)
 
 You can run the application in a docker container (requires docker installation)
 as follows:
@@ -34,7 +34,7 @@ GIST_FILENAME={ANY_FILENAME}
 docker-compose up -d --build
 ```
 
-#### Node
+#### Node
 
 if you don't wan't to use docker, you can run it on your host machine using node.
 

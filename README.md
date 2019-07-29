@@ -8,6 +8,10 @@ _underwent a full refactor and now it's an [npm package!](https://npmjs.com/)_
 ![Last Commit](https://img.shields.io/github/last-commit/gitbugr/sky-epg-xmltv-kodi)
 ![Prs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
 
+![Screenshot](screenshot.png)
+
+Example file: https://gist.github.com/gitbugr/e26ed2d8bcd21a6684a2408997b60988
+
 ## Installation (as application)
 
 ```bash

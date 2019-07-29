@@ -2,46 +2,59 @@
 
 For Kodi and other XMLTV supporting systems.
 
-_underwent a full refactor and now it's an [](npm package!)_
+_underwent a full refactor and now it's an [npm package!](https://npmjs.com/)_
 
-### Installation (as application)
+![Licence](https://img.shields.io/github/license/gitbugr/sky-epg-xmltv-kodi)
+![Last Commit](https://img.shields.io/github/last-commit/gitbugr/sky-epg-xmltv-kodi)
+![Prs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
+
+## Installation (as application)
 
 ```bash
 git clone https://github.com/gitbugr/sky-epg-scraper.git
 cd sky-epg-scraper
 ```
 
-### Running the Application
+## Running the Application
 
 There are two ways you can run the application;
 
-#### Docker (recomended)
+### Setting up Environment
 
-You can run the application in a docker container (requires docker installation)
-as follows:
-
-**edit the .env file**
+First you'll want to set up your environment by editing the .env file in the root
+of the project.
 
 ```env
 GIST_ID={YOUR_GIST_ID}
 GIST_TOKEN={YOUR_GIST_TOKEN}
 GIST_FILENAME={ANY_FILENAME}
+REPEAT_SECONDS=600
 ```
+
+### Option 1: Node
+
+To run this on your host machine using node, you'll first need to install the
+required packages.
+
+```bash
+npm install
+```
+
+Then run the startup script.
+
+```bash
+./run.sh";
+```
+
+### Option 2: Docker
+
+You can run the application in a docker container (requires docker installation)
+as follows:
 
 **then run**
 
 ```bash
 docker-compose up -d --build
-```
-
-#### Node
-
-if you don't wan't to use docker, you can run it on your host machine using node.
-
-*note: this only runs once, so setting up a cronjob is essential for up-to-date epg**
-
-```bash
-GIST_ID="{YOUR_GIST_ID}" GIST_TOKEN="{YOUR_GIST_TOKEN}" GIST_FILENAME="{ANY_FILENAME} node src/cli.js -t gist";
 ```
 
 ## Usage as NPM Module

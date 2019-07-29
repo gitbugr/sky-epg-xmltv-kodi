@@ -18,7 +18,7 @@ const supportedOutputTypes = {
         requirements: {
             environmentVariables: [
                 'GIST_ID',
-                'GIST_TOKEN_ID',
+                'GIST_TOKEN',
                 'GIST_FILENAME',
             ],
         },
@@ -43,8 +43,8 @@ const skyHeaders = {
 }
 
 const skyUrls = {
-    channelIndex: 'http://tv.sky.com/channel/index/4101-1',
-    programmeInfo: (channel, requestNumber) => `http://tv.sky.com/programme/channel/${channel}/${startDate.toISOString().split("T")[0]}/${requestNumber}.json`,
+    channelIndex: 'http://epg.sky.com/api/index.php/channels',
+    programmeInfo: (channel, requestNumber) => `http://epg.sky.com/api/index.php/tvguide/${channel}/${requestNumber * 1800}`,
 }
 
 /**
@@ -126,7 +126,7 @@ export default class SkyEPGScraper
             });
 
             if (response.status === 200) {
-                const channels = response.data.init.channels;
+                const channels = response.data;
                 channels.forEach((channel) => {
                     this.channels[channel.c[0]] = {
                         title: channel.lcn || channel.t
@@ -159,7 +159,7 @@ export default class SkyEPGScraper
         if (channelNumber < channelsEntries.length) {
             const channel = channelsEntries[channelNumber];
             // if first request for channel, initialise key
-            if (requestNumber === 0) {
+            if (!(channel[0] in this.programmeInfo)) {
                 this.programmeInfo[channel[0]] = [];
             }
             try {
@@ -170,13 +170,13 @@ export default class SkyEPGScraper
                 });
 
                 if (response.status === 200) {
-                    const listings = response.data.listings[channel[0]];
-                    for (const listing in listings) {
+                    const listings = response.data[channel[0]];
+                    for (const listing of listings) {
                         const startTime = new Date(listing.s * 1000);
                         const endTime = new Date(startTime.getTime() + (listing.m[1] / 60) * 60000);
                         this.programmeInfo[channel[0]].push({
-                            startTime: dateTimeFormatXMLTV(startTime),
-                            endTime: dateTimeFormatXMLTV(endTime),
+                            startTime: this.dateTimeFormatXMLTV(startTime),
+                            endTime: this.dateTimeFormatXMLTV(endTime),
                             runTime: listing.m[1] / 60,
                             title: listing.t,
                             description: listing.d
@@ -207,18 +207,25 @@ export default class SkyEPGScraper
      */
     async run() {
         try {
+            process.stdout.write(`Getting channel info...`);
             const getChannelsResult = await this.getChannels();
             if(getChannelsResult.status === 1) {
                 try {
-                    for (const channel of Array(this.channels.length).keys()) {
+                    const numberOfChannels = Object.keys(this.channels).length;
+                    for (const channel of Array(numberOfChannels).keys()) {
                         for (const request of Array(4).keys()) {
+                            process.stdout.clearLine();
+                            process.stdout.cursorTo(0);
+                            process.stdout.write(`Getting programme info... (${channel + 1}/${numberOfChannels})(${request + 1}/4)`);
                             const getProgrammeInfoResult = await this.getProgrammeInfo(channel, request);
                             // we log the error and carry on...
                             if (getProgrammeInfoResult.status !== 1) {
-                                process.stderr.write(JSON.stringidy(getProgrammeInfoResult) + os.EOL);
+                                process.stderr.write(JSON.stringify(getProgrammeInfoResult) + os.EOL);
                             }
                         }
                     }
+                    process.stdout.clearLine();
+                    process.stdout.cursorTo(0);
                 } catch (error) {
                     process.stderr.write(`Not quite sure how this could have happened... ${error}` + os.EOL);
                 }
@@ -237,7 +244,7 @@ export default class SkyEPGScraper
      */
     dateTimeFormatXMLTV(date) {
         // maybe momentjs (or something less bloated) instead of this clusterfuck?
-        const yearS = date.getFullYear().toString();
+        const yearS = date.getFullYear();
         const monthS = (date.getMonth() + 1 < 10 ? "0" + (date.getMonth() + 1) : (date.getMonth() + 1));
         const dateS = (date.getDate() < 10 ? "0" + date.getDate() : date.getDate());
         const hoursS = (date.getHours() < 10 ? "0" + date.getHours() : date.getHours());
@@ -250,7 +257,7 @@ export default class SkyEPGScraper
      * converts stored JS Objects to XMLTV and wites to output.
      */
     async write() {
-        for (channel in Object.entries(this.channels)) {
+        for (const channel of Object.entries(this.channels)) {
             const title = channel[1].title
             const channelElement = this.xml.ele('channel', {'id': title || 0});
 
@@ -272,12 +279,12 @@ export default class SkyEPGScraper
             }
         }
 
-        for (channelProgrammes in Object.entries(this.programmeInfo)) {
-            for (programme in channelProgrammes){
+        for (const channelProgrammes of Object.entries(this.programmeInfo)) {
+            for (const programme of channelProgrammes[1]){
                 const programmeElement = this.xml.ele('programme', {
                     start: programme.startTime,
                     stop: programme.endTime,
-                    channel: this.channels[channelProgramme].title,
+                    channel: this.channels[channelProgrammes[0]].title,
                 });
                 programmeElement.ele(
                     'title',
@@ -298,14 +305,19 @@ export default class SkyEPGScraper
             case 'gist':
                 process.stdout.write(`Saving to gist...` + os.EOL);
                 const gist = new Gist();
+                gist.setToken(process.env.GIST_TOKEN);
 
-                gist.setToken(process.env.TOKEN_ID);
                 try {
-                    const gistResult = await gist.update({
-                        'files': {
-                            [process.env.GIST_FILENAME]: xmlFormatted
-                        },
-                    });
+                    const gistResult = await gist.update(
+                        process.env.GIST_ID,
+                        {
+                            'files': {
+                                [process.env.GIST_FILENAME]: {
+                                    content: xmlFormatted,
+                                },
+                            },
+                        }
+                    );
 
                     process.stdout.write(`Done! total execution took ${(new Date().getTime() - startDate.getTime()) * 1000} seconds` + os.EOL);
                 } catch (error) {

@@ -1,14 +1,68 @@
-# EPG Generator
+# Sky EPG Scraper / XMLTV Generator
 
-Scrapes Sky's TV-Guide to generate an XMLTV formatted EPG.
+For Kodi and other XMLTV supporting systems.
 
-https://bit.ly/UKEPG
+_underwent a full refactor and now it's an [npm package!](https://npmjs.com/)_
 
-#### To Setup, change ```token_id``` and ```gist_id``` in epg.js to your corrosponding ID's.
+![Licence](https://img.shields.io/github/license/gitbugr/sky-epg-xmltv-kodi)
+![Last Commit](https://img.shields.io/github/last-commit/gitbugr/sky-epg-xmltv-kodi)
+![Prs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
 
-#### To Run (requires node.js)
+## Installation (as application)
 
+```bash
+git clone https://github.com/gitbugr/sky-epg-scraper.git
+cd sky-epg-scraper
 ```
+
+## Running the Application
+
+There are two ways you can run the application;
+
+### Setting up Environment
+
+First you'll want to set up your environment by editing the .env file in the root
+of the project.
+
+```env
+GIST_ID={YOUR_GIST_ID}
+GIST_TOKEN={YOUR_GIST_TOKEN}
+GIST_FILENAME={ANY_FILENAME}
+REPEAT_SECONDS=600
+```
+
+### Option 1: Node
+
+To run this on your host machine using node, you'll first need to install the
+required packages.
+
+```bash
 npm install
-node epg.js
+```
+
+Then run the startup script.
+
+```bash
+./run.sh";
+```
+
+### Option 2: Docker
+
+You can run the application in a docker container (requires docker installation)
+as follows:
+
+**then run**
+
+```bash
+docker-compose up -d --build
+```
+
+## Usage as NPM Module
+
+### Installation
+
+```bash
+yarn add sky-epg-scraper
+# or
+npm install sky-epg-scraper
 ```

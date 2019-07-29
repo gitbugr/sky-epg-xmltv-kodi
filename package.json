@@ -1,16 +1,22 @@
 {
-  "name": "epg",
-  "version": "1.0.0",
-  "description": "",
-  "main": "epg.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "dependencies" : {
-     "request" : "latest",
-     "gist.js" : "latest",
-     "xmlbuilder" : "latest"
-  },
-  "author": "Kyron Taylor",
-  "license": "ISC"
+    "name": "sky-epg-scraper",
+    "version": "1.0.0",
+    "description": "Sky EPG Scraper / XMLTV Generator",
+    "main": "src/cli.js",
+    "scripts": {
+        "start": "babel-node src/cli.js"
+    },
+    "dependencies": {
+        "axios": "^0.19.0",
+        "gist-client": "^1.1.0",
+        "xmlbuilder": "latest"
+    },
+    "author": "Kyron Taylor",
+    "license": "ISC",
+    "devDependencies": {
+        "@babel/cli": "^7.5.5",
+        "@babel/core": "^7.5.5",
+        "@babel/node": "^7.5.5",
+        "@babel/preset-env": "^7.5.5"
+    }
 }

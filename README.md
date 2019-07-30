@@ -1,4 +1,4 @@
-# Sky EPG Scraper / XMLTV Generator
+# Sky EPG Tool
 
 For Kodi and other XMLTV supporting systems.
 
@@ -15,8 +15,8 @@ Example file: https://gist.github.com/gitbugr/e26ed2d8bcd21a6684a2408997b60988
 ## Installation (as application)
 
 ```bash
-git clone https://github.com/gitbugr/sky-epg-scraper.git
-cd sky-epg-scraper
+git clone https://github.com/gitbugr/sky-epg-xmltv-kodi.git
+cd sky-epg-xmltv-kodi
 ```
 
 ## Running the Application
@@ -66,7 +66,7 @@ docker-compose up -d --build
 ### Installation
 
 ```bash
-yarn add sky-epg-scraper
+yarn add sky-epg-xmltv-kodi
 # or
-npm install sky-epg-scraper
+npm install sky-epg-xmltv-kodi
 ```

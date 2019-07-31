@@ -47,7 +47,7 @@ npm install
 Then run the startup script.
 
 ```bash
-./run.sh";
+./run.sh
 ```
 
 ### Option 2: Docker

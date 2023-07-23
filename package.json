@@ -1,6 +1,6 @@
 {
     "name": "sky-epg-scraper",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "description": "Sky EPG Scraper / XMLTV Generator",
     "main": "src/cli.js",
     "scripts": {
@@ -12,7 +12,7 @@
         "xmlbuilder": "latest"
     },
     "author": "Kyron Taylor",
-    "license": "ISC",
+    "license": "MIT",
     "devDependencies": {
         "@babel/cli": "^7.5.5",
         "@babel/core": "^7.5.5",

@@ -2,7 +2,7 @@
 
 For Kodi and other XMLTV supporting systems.
 
-_underwent a full refactor and now it's an [npm package!](https://npmjs.com/)_
+_underwent a full refactor and now it's an [npm package!](https://www.npmjs.com/package/sky-epg-scraper)_
 
 ![Licence](https://img.shields.io/github/license/gitbugr/sky-epg-xmltv-kodi)
 ![Last Commit](https://img.shields.io/github/last-commit/gitbugr/sky-epg-xmltv-kodi)
@@ -66,7 +66,7 @@ docker-compose up -d --build
 ### Installation
 
 ```bash
-yarn add sky-epg-xmltv-kodi
+yarn add sky-epg-scraper
 # or
-npm install sky-epg-xmltv-kodi
+npm install sky-epg-scraper
 ```

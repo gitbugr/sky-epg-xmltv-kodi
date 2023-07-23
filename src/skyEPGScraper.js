@@ -43,8 +43,8 @@ const skyHeaders = {
 }
 
 const skyUrls = {
-    channelIndex: 'http://epg.sky.com/api/index.php/channels',
-    programmeInfo: (channel, requestNumber) => `http://epg.sky.com/api/index.php/tvguide/${channel}/${requestNumber * 1800}`,
+    channelIndex: 'https://awk.epgsky.com/hawk/linear/services/4101/1',
+    programmeInfo: (channel, scheduleDate) => `https://awk.epgsky.com/hawk/linear/schedule/${scheduleDate}/${channel}`,
 }
 
 /**
@@ -127,9 +127,10 @@ export default class SkyEPGScraper
 
             if (response.status === 200) {
                 const channels = response.data;
-                channels.forEach((channel) => {
-                    this.channels[channel.c[0]] = {
-                        title: channel.lcn || channel.t
+                channels.services.forEach((channel) => {
+                    this.channels[channel.c] = {
+                        title: channel.t,
+                        sid: channel.sid,
                     };
                 });
             } else {
@@ -150,10 +151,10 @@ export default class SkyEPGScraper
      * fetches the programme data for specified channel
      *
      * @param {Number} channelNumber
-     * @param {Number} requestNumber
+     * @param {Date} scheduleDate
      * @return {Promise}
      */
-    async getProgrammeInfo(channelNumber, requestNumber){
+    async getProgrammeInfo(channelNumber, scheduleDate){
         const responseBuilder = new SkyEPGResponseBuilder();
         const channelsEntries = Object.entries(this.channels);
         if (channelNumber < channelsEntries.length) {
@@ -164,22 +165,22 @@ export default class SkyEPGScraper
             }
             try {
                 const response = await axios({
-                    url: skyUrls.programmeInfo(channel[0], requestNumber),
+                    url: skyUrls.programmeInfo(channel[1].sid, `${scheduleDate.getFullYear()}${('0' + (scheduleDate.getMonth() + 1)).slice(-2)}${('0' + scheduleDate.getDate()).slice(-2)}`),
                     method: 'GET',
                     headers: skyHeaders
                 });
 
                 if (response.status === 200) {
-                    const listings = response.data[channel[0]];
+                    const listings = response.data.schedule.find(el => el.sid === channel[1].sid).events;
                     for (const listing of listings) {
-                        const startTime = new Date(listing.s * 1000);
-                        const endTime = new Date(startTime.getTime() + (listing.m[1] / 60) * 60000);
+                        const startTime = new Date(listing.st * 1000);
+                        const endTime = new Date((listing.st + listing.d) * 1000);
                         this.programmeInfo[channel[0]].push({
                             startTime: this.dateTimeFormatXMLTV(startTime),
                             endTime: this.dateTimeFormatXMLTV(endTime),
-                            runTime: listing.m[1] / 60,
+                            runTime: listing.d / 60,
                             title: listing.t,
-                            description: listing.d
+                            description: listing.sy
                         });
                     }
                 } else {
@@ -213,11 +214,14 @@ export default class SkyEPGScraper
                 try {
                     const numberOfChannels = Object.keys(this.channels).length;
                     for (const channel of Array(numberOfChannels).keys()) {
+                        const scheduleDate = new Date();
+                        scheduleDate.setDate(scheduleDate.getDate() - 1);
                         for (const request of Array(4).keys()) {
                             process.stdout.clearLine();
                             process.stdout.cursorTo(0);
                             process.stdout.write(`Getting programme info... (${channel + 1}/${numberOfChannels})(${request + 1}/4)`);
-                            const getProgrammeInfoResult = await this.getProgrammeInfo(channel, request);
+                            const getProgrammeInfoResult = await this.getProgrammeInfo(channel, scheduleDate);
+                            scheduleDate.setDate(scheduleDate.getDate() + 1);
                             // we log the error and carry on...
                             if (getProgrammeInfoResult.status !== 1) {
                                 process.stderr.write(JSON.stringify(getProgrammeInfoResult) + os.EOL);

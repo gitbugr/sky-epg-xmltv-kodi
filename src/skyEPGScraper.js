@@ -1,11 +1,11 @@
-import os from 'os'
+import os from 'os';
 import Gist from 'gist-client'
 import xmlbuilder from 'xmlbuilder'
 import axios from 'axios'
 import fs from 'fs';
 import path from 'path';
 
-import SkyEPGResponseBuilder from './skyEPGResponseBuilder'
+import SkyEPGResponseBuilder, { SkyEPGExceptions } from './skyEPGResponseBuilder'
 import channelNameSubstitutions from './channelNameSubstitutions.json'
 
 const startDate = new Date();
@@ -25,11 +25,11 @@ const supportedOutputTypes = {
             ],
         },
     },
-   'file': {
+    'file': {
         requirements: {
             environmentVariables: [
                 'OUTPUT_DIRECTORY',
-                'OUTPUT_FILENAME', 
+                'OUTPUT_FILENAME',
             ],
         },
     },
@@ -51,13 +51,12 @@ const skyUrls = {
 /**
  * @class SkyEPGScraper
  */
-export default class SkyEPGScraper
-{
+export default class SkyEPGScraper {
     /**
      * constructor
      *
      * @param {String=} [outputType='none']
-    */
+     */
     constructor(outputType = 'none') {
         this.channels = {};
         this.programmeInfo = {};
@@ -82,6 +81,7 @@ export default class SkyEPGScraper
      *
      * @param {Object} object
      */
+    // noinspection JSUnusedGlobalSymbols
     setChannelNameSubstitutions(object) {
         this.channelNameSubstitutions = object;
     }
@@ -106,7 +106,7 @@ export default class SkyEPGScraper
                 });
             }
         } else {
-            responseBuilder.error('1', outputType);
+            responseBuilder.error(SkyEPGExceptions.OUTPUT_TYPE_NOT_SUPPORTED(outputType));
         }
 
         return responseBuilder.result;
@@ -135,15 +135,11 @@ export default class SkyEPGScraper
                     };
                 });
             } else {
-                throw 2;
+                throw SkyEPGExceptions.SKY_API_FAIL_CHANNELS();
             }
 
         } catch (error) {
-            if (typeof error === 'number') {
-                responseBuilder.error(String(errorCode));
-            } else {
-                responseBuilder.error('-1', error);
-            }
+            responseBuilder.error(error);
         }
         return responseBuilder.result;
     }
@@ -155,7 +151,7 @@ export default class SkyEPGScraper
      * @param {Date} scheduleDate
      * @return {Promise}
      */
-    async getProgrammeInfo(channelNumber, scheduleDate){
+    async getProgrammeInfo(channelNumber, scheduleDate) {
         const responseBuilder = new SkyEPGResponseBuilder();
         const channelsEntries = Object.entries(this.channels);
         if (channelNumber < channelsEntries.length) {
@@ -181,22 +177,19 @@ export default class SkyEPGScraper
                             endTime: this.dateTimeFormatXMLTV(endTime),
                             runTime: listing.d / 60,
                             title: listing.t,
-                            description: listing.sy
+                            description: listing.sy,
+                            icon: listing.programmeuuid ? `https://images.metadata.sky.com/pd-image/${listing.programmeuuid}/16-9/640` : '',
                         });
                     }
                 } else {
-                    throw 2;
+                    throw SkyEPGExceptions.SKY_API_FAIL_PROGRAMMES();
                 }
             } catch (error) {
-                if (typeof error === 'number') {
-                    responseBuilder.error(String(errorCode));
-                } else {
-                    responseBuilder.error('-1', error);
-                }
+                responseBuilder.error(error);
             }
 
         } else {
-            responseBuilder.error(3);
+            responseBuilder.error(SkyEPGExceptions.SKY_API_NO_PROGRAMMES_FOUND());
         }
 
         return responseBuilder.result;
@@ -211,7 +204,7 @@ export default class SkyEPGScraper
         try {
             process.stdout.write(`Getting channel info...`);
             const getChannelsResult = await this.getChannels();
-            if(getChannelsResult.status === 1) {
+            if (getChannelsResult.status === 1) {
                 try {
                     const numberOfChannels = Object.keys(this.channels).length;
                     for (const channel of Array(numberOfChannels).keys()) {
@@ -245,7 +238,7 @@ export default class SkyEPGScraper
     /**
      * dateTimeFormatXMLTV - converts js date to XMLTV format date
      *
-     * @param {Date}
+     * @param {Date} date
      */
     dateTimeFormatXMLTV(date) {
         // maybe momentjs (or something less bloated) instead of this clusterfuck?
@@ -255,7 +248,7 @@ export default class SkyEPGScraper
         const hoursS = (date.getHours() < 10 ? "0" + date.getHours() : date.getHours());
         const minutesS = (date.getMinutes() < 10 ? "0" + date.getMinutes() : date.getMinutes());
         const secondsS = (date.getSeconds() < 10 ? "0" + date.getSeconds() : date.getSeconds());
-        return `${yearS}${monthS}${dateS}${hoursS}${minutesS}${secondsS}+0000`;
+        return `${yearS}${monthS}${dateS}${hoursS}${minutesS}${secondsS} +0000`;
     }
 
     /*
@@ -268,8 +261,8 @@ export default class SkyEPGScraper
 
             const titleSegments = title.split(' ');
             for (const [index, titleSegment] of titleSegments) {
-                if (typeof channelNameSubstitutions[titleSegment] !== 'undefined'){
-                    titleSegments[index] = channelNameSubstitutions[titleSegment];
+                if (typeof this.channelNameSubstitutions[titleSegment] !== 'undefined') {
+                    titleSegments[index] = this.channelNameSubstitutions[titleSegment];
                 }
             }
 
@@ -278,14 +271,14 @@ export default class SkyEPGScraper
 
             // always add HD variant - will be filtered out if channel
             // doesn't exist anyway
-            if (titleSegments.slice(-1) !== 'HD') {
+            if ((titleSegments.slice(-1)[0] || '') !== 'HD') {
                 const titleSegmentsHD = [...titleSegments, 'HD'];
                 channelElement.ele('display-name', titleSegmentsHD.join(' '));
             }
         }
 
         for (const channelProgrammes of Object.entries(this.programmeInfo)) {
-            for (const programme of channelProgrammes[1]){
+            for (const programme of channelProgrammes[1]) {
                 const programmeElement = this.xml.ele('programme', {
                     start: programme.startTime,
                     stop: programme.endTime,
@@ -293,18 +286,22 @@ export default class SkyEPGScraper
                 });
                 programmeElement.ele(
                     'title',
-                    { lang:"en" },
+                    {lang: "en"},
                     programme.title
+                );
+                programme.icon && programmeElement.ele(
+                    'icon',
+                    {src: programme.icon},
                 );
                 programmeElement.ele(
                     'desc',
-                    { lang:"en" },
+                    {lang: "en"},
                     programme.description
                 );
             }
         }
 
-        const xmlFormatted = this.xml.end({ pretty: true });
+        const xmlFormatted = this.xml.end({pretty: true});
 
         switch (this.output) {
             case 'gist':
@@ -313,7 +310,7 @@ export default class SkyEPGScraper
                 gist.setToken(process.env.GIST_TOKEN);
 
                 try {
-                    const gistResult = await gist.update(
+                    await gist.update(
                         process.env.GIST_ID,
                         {
                             'files': {
@@ -328,27 +325,28 @@ export default class SkyEPGScraper
                 } catch (error) {
                     process.stderr.write(`Not quite sure how this could have happened... ${error}` + os.EOL);
                 }
-        case 'file':
-        process.stdout.write(`Saving to file...` + os.EOL);
-        const outputDirectory = process.env.OUTPUT_DIRECTORY;
-        const outputFilename = process.env.OUTPUT_FILENAME;
+                break;
+            case 'file':
+                process.stdout.write(`Saving to file...` + os.EOL);
+                const outputDirectory = process.env.OUTPUT_DIRECTORY;
+                const outputFilename = process.env.OUTPUT_FILENAME;
 
-        // Check if the specified directory exists or create it
-        if (!fs.existsSync(outputDirectory)) {
-            fs.mkdirSync(outputDirectory, { recursive: true });
-        }
+                // Check if the specified directory exists or create it
+                if (!fs.existsSync(outputDirectory)) {
+                    fs.mkdirSync(outputDirectory, {recursive: true});
+                }
 
-        // Combine the output directory and filename to get the full path
-        const outputPath = path.join(outputDirectory, outputFilename);
+                // Combine the output directory and filename to get the full path
+                const outputPath = path.join(outputDirectory, outputFilename);
 
-        // Write the XML content to the specified file
-        try {
-            fs.writeFileSync(outputPath, xmlFormatted);
-            process.stdout.write(`Done! XML saved to: ${outputPath}` + os.EOL);
-        } catch (error) {
-            process.stderr.write(`Failed to save XML: ${error}` + os.EOL);
-        }
-        break;
+                // Write the XML content to the specified file
+                try {
+                    fs.writeFileSync(outputPath, xmlFormatted);
+                    process.stdout.write(`Done! XML saved to: ${outputPath}` + os.EOL);
+                } catch (error) {
+                    process.stderr.write(`Failed to save XML: ${error}` + os.EOL);
+                }
+                break;
         }
     }
 }

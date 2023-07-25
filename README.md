@@ -28,12 +28,24 @@ There are two ways you can run the application;
 First you'll want to set up your environment by editing the .env file in the root
 of the project.
 
+To store your XMLTV file as a gist, use the following:
+
+
 ```env
 GIST_ID={YOUR_GIST_ID}
 GIST_TOKEN={YOUR_GIST_TOKEN}
 GIST_FILENAME={ANY_FILENAME}
 REPEAT_SECONDS=600
 ```
+
+To store your XMLTV file locally, use the following:
+
+```env
+OUTPUT_DIRECTORY={SOME_LOCAL_DIRECTORY}
+OUTPUT_FILENAME={FILENAME.xml}
+REPEAT_SECONDS=600
+```
+
 
 ### Option 1: Node
 

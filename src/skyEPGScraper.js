@@ -2,6 +2,8 @@ import os from 'os'
 import Gist from 'gist-client'
 import xmlbuilder from 'xmlbuilder'
 import axios from 'axios'
+import fs from 'fs';
+import path from 'path';
 
 import SkyEPGResponseBuilder from './skyEPGResponseBuilder'
 import channelNameSubstitutions from './channelNameSubstitutions.json'
@@ -23,16 +25,15 @@ const supportedOutputTypes = {
             ],
         },
     },
-    /*
-     *'file': {
-     *    requirements: {
-     *        environmentVariables: [
-     *            'OUTPUT_FILENAME'
-     *        ],
-     *    },
-     *},
-     */
-}
+   'file': {
+        requirements: {
+            environmentVariables: [
+                'OUTPUT_DIRECTORY',
+                'OUTPUT_FILENAME', 
+            ],
+        },
+    },
+};
 
 /**
  * @const {Object}
@@ -327,10 +328,27 @@ export default class SkyEPGScraper
                 } catch (error) {
                     process.stderr.write(`Not quite sure how this could have happened... ${error}` + os.EOL);
                 }
-                break;
-            case 'stdout':
-                process.stdout.write(xmlFormatted + os.EOL);
-                break;
+        case 'file':
+        process.stdout.write(`Saving to file...` + os.EOL);
+        const outputDirectory = process.env.OUTPUT_DIRECTORY;
+        const outputFilename = process.env.OUTPUT_FILENAME;
+
+        // Check if the specified directory exists or create it
+        if (!fs.existsSync(outputDirectory)) {
+            fs.mkdirSync(outputDirectory, { recursive: true });
+        }
+
+        // Combine the output directory and filename to get the full path
+        const outputPath = path.join(outputDirectory, outputFilename);
+
+        // Write the XML content to the specified file
+        try {
+            fs.writeFileSync(outputPath, xmlFormatted);
+            process.stdout.write(`Done! XML saved to: ${outputPath}` + os.EOL);
+        } catch (error) {
+            process.stderr.write(`Failed to save XML: ${error}` + os.EOL);
+        }
+        break;
         }
     }
 }

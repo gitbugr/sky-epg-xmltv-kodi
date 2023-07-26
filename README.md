@@ -21,7 +21,7 @@ cd sky-epg-xmltv-kodi
 
 ## Running the Application
 
-There are two ways you can run the application;
+There are two ways you can run the application and two forms of export. The program exports both to Gist and to a local directory (as specified in the env file).
 
 ### Setting up Environment
 
@@ -36,6 +36,8 @@ GIST_ID={YOUR_GIST_ID}
 GIST_TOKEN={YOUR_GIST_TOKEN}
 GIST_FILENAME={ANY_FILENAME}
 REPEAT_SECONDS=600
+OUTPUT_DIRECTORY=
+OUTPUT_FILENAME={ANY_FILENAME}
 ```
 
 To store your XMLTV file locally, use the following:

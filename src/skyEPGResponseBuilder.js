@@ -1,20 +1,22 @@
 
+class SkyAPIException extends Error {
+    name = 'SkyAPIException';
+}
+
+export const SkyEPGExceptions = {
+    SKY_API_FAIL_CHANNELS: () => new SkyAPIException('Something went wrong with the Sky API when fetching channels.'),
+    SKY_API_FAIL_PROGRAMMES: () => new SkyAPIException('Something went wrong with the Sky API when fetching programme info.'),
+    SKY_API_NO_PROGRAMMES_FOUND: () => new SkyAPIException('There were no programmes found for this channel, maybe something went wrong?'),
+    OUTPUT_TYPE_NOT_SUPPORTED: (outputType) => new Error(`Output type '${outputType}' is not supported`),
+}
+
+
 export default class SkyEPGResponseBuilder
 {
     constructor() {
         this.status = 1;
         this.message = 'success';
         this.errors = [];
-
-        this.errorCodes = {
-            '-1': {
-                message: () => `Unknown error: "${arguments[0]}"`,
-            },
-            '1': {
-                message: () => `Output type "${arguments[0]}" is not supported`,
-            },
-        }
-
     }
 
     /**
@@ -25,16 +27,14 @@ export default class SkyEPGResponseBuilder
      */
 
     /**
-     * error
-     *
-     * @param {Number} code - error code
+     * @param {Error} error
      */
-    error(code) {
+    error(error) {
         this.status = 0;
         this.message = 'error';
         this.errors.push({
-            code,
-            message: this.errorCodes[code].message([...arguments].slice(1))
+            type: error.name,
+            message: error.message
         })
     }
 

@@ -325,7 +325,6 @@ export default class SkyEPGScraper {
                 } catch (error) {
                     process.stderr.write(`Not quite sure how this could have happened... ${error}` + os.EOL);
                 }
-                break;
             case 'file':
                 process.stdout.write(`Saving to file...` + os.EOL);
                 const outputDirectory = process.env.OUTPUT_DIRECTORY;
